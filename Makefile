@@ -1,9 +1,9 @@
-COMP=gfortran
-INC=-I/PATH/TO/python.h
+COMP=ifort
+INC=-I/local/sharper/anaconda/include
 FLAGS=
 
 all: Binning
 
 Binning:
 
-	f2py -c --f90exec=$(FCOMP) $(FLAGS) -m fBinning fBinning.f90 $(INC) $(LIB)
+	f2py -c --f90exec=$(COMP) $(FLAGS) -m fBinning fBinning.f90  

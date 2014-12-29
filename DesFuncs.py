@@ -31,7 +31,7 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
     return np.reshape(FtZd,(FtZd.size,1))
 
 
-def AXFunc(a0,FtZFa,tod,bl,pix,cn,Maps,comm=comm):
+def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
     '''Returns solution for Ft Z F a
     '''
 
@@ -39,7 +39,6 @@ def AXFunc(a0,FtZFa,tod,bl,pix,cn,Maps,comm=comm):
     Binning.BinMap_ext(a,bl,pix,cn,Maps.m,
                        sw=Maps.sw,
                        hw=Maps.hw,
-                       hits=Maps.hits,
                        swroot=Maps.swroot,
                        hwroot=Maps.hwroot,
                        comm=comm)
@@ -51,7 +50,7 @@ def AXFunc(a0,FtZFa,tod,bl,pix,cn,Maps,comm=comm):
         asum = np.nansum(a)
 
     #Calculate weighted baselength values and subtract the sum of each baseline of pixels:
-    FtZFa[:] = a*np.float(bl)/cn - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
+    FtZFa[:,0] = np.squeeze(a)*np.float(bl)/cn - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
 
 
 
@@ -69,7 +68,7 @@ def FtP(m,p,bl,cn,hits):
 def Ft(x,bl,C_N):
 
     #BIN TOD TO BASELINES
-    nbaselines = len(x)/int(bl)
+    n = len(x)/int(bl)
     out = np.zeros(n)
     for i in range(n):
         out[i] = np.sum(x[i*bl : (i+1)*bl])/ C_N[i]

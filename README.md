@@ -13,7 +13,7 @@ V0.1: All the correct code has now been uploaded. Changes:
  
       - Removed alot of excess code.
  
-      - Added a class to hold the output maps and auxillaries.
+      - Added a class to hold the output maps and auxiliaries.
 
       - CGM function now expects two user written functions to derive
       Ax = b. One to define Ax and another to define b.  CGM also
@@ -30,3 +30,9 @@ V0.1: All the correct code has now been uploaded. Changes:
 
       NB: This version probably still does not work. Everything is
       untested.
+
+V0.1a: Changes:
+	
+	-Fixed a number of problems with the code. Everything should
+	at least run correctly now. No guarantees it will actually
+	destripe anything though.

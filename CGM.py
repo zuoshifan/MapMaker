@@ -19,7 +19,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
     rank = comm.rank
 
     #First, determine value of b:
-    b = bFunc(x0,*args)
+    b = bFunc(x0,*args,comm=comm)
 
     dsize = len(b)
     xsize = len(x0)
@@ -31,7 +31,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
     #Initial guess at Ax:
     Ax = np.zeros((dsize,1)) #Define for inital guess
     Ad = np.zeros((dsize,1)) #Define for use in the CGM loop
-    AXFunc(x0,Ax,*args)
+    AXFunc(x0,Ax,*args,comm=comm)
 
 
     #MAKE COLUMN VECTORS:
@@ -44,7 +44,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
     del0 = r.T.dot(r)
     for i in range(maxiter):
 
-        AXFunc(d,Ad,*args)
+        AXFunc(d,Ad,*args,comm=comm)
 
         sumr2  = r.T.dot(r)
         sumdAd = d.T.dot(Ad)
@@ -55,7 +55,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
         
         xi = xi + alpha*d
         if np.mod(i+1,200) == 0:
-            AXFunc(xi,Ad,*args)
+            AXFunc(xi,Ad,*args,comm=comm)
             rnew = np.reshape(b - Ad,(dsize,1))
         else:
             rnew = r - alpha*Ad

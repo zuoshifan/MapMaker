@@ -6,6 +6,7 @@ from CGM import CGM
 from Mapping import MapsClass
 from DesFuncs import bFunc,AXFunc
 
+import Binning
 import WhiteCovar
 
 #------------------------------------------------------------------------#
@@ -29,7 +30,7 @@ def InitGuess(tod,baselength):
 
     return a0
 
-def Destriper(tod,baselength,pix,npix,comm=MPI.COMM_WORLD(),bl_long=None):
+def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None):
     '''Execute the destriper functions. Returns the map and hit map.
     
     '''
@@ -39,13 +40,13 @@ def Destriper(tod,baselength,pix,npix,comm=MPI.COMM_WORLD(),bl_long=None):
 
     #If user provides no 'long' baselength, estimate it to be 10*baselength or tod.size
     if bl_long == None: 
-        bl_long = np.min([tod.size,int(baselength) * 10])
+        bl_long = np.min([tod.size,int(bl) * 10])
 
     #Define inital guess:
-    a0 = InitGuess(tod,baselength)
+    a0 = InitGuess(tod,bl)
     
     #Estimate white-noise level of the data:
-    cn = WhiteCovar.WhiteCovar(tod,baselength,bl_long)
+    cn = WhiteCovar.WhiteCovar(tod,bl,bl_long)
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate extra maps

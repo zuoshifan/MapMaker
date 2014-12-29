@@ -129,7 +129,7 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
 !f2py intent(in) nsamp, pixels,bl,nb
 
   real*8 cn(nb)
-  real*8 x(nsamp)
+  real*8 x(nb)
   integer pix(nsamp)
 !f2py  intent(in)  cn, x ,pix
 
