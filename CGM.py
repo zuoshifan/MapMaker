@@ -15,18 +15,23 @@ import numpy as np
 import MPI_tools
 from mpi4py import MPI
 
-def CGM(x0, b, AXClass, maxiter=200, comm = MPI.COMM_WORLD):
-
+def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
     rank = comm.rank
 
-    dsize = b.size
+    #First, determine value of b:
+    b = bFunc(x0,*args)
+
+    dsize = len(b)
     xsize = len(x0)
-    #Make b a column vector:
-    b = np.reshape(b,(b.size,1))
+
+    #Ensure b and x0 are column vectors:
+    b  = np.reshape(b,(b.size,1))
     x0 = np.reshape(x0,(xsize,1))
 
     #Initial guess at Ax:
-    Ax = AXClass.AXFunc(x0)
+    Ax = np.zeros((dsize,1)) #Define for inital guess
+    Ad = np.zeros((dsize,1)) #Define for use in the CGM loop
+    AXFunc(x0,Ax,*args)
 
 
     #MAKE COLUMN VECTORS:
@@ -37,14 +42,12 @@ def CGM(x0, b, AXClass, maxiter=200, comm = MPI.COMM_WORLD):
 
     #Initial Threshold:
     del0 = r.T.dot(r)
-    
     for i in range(maxiter):
 
-        Ad = AXClass.AXFunc(d) #A.dot(d)
+        AXFunc(d,Ad,*args)
 
         sumr2  = r.T.dot(r)
         sumdAd = d.T.dot(Ad)
-
         sumr2  = MPI_tools.MPI_sum(comm,sumr2)
         sumdAd = MPI_tools.MPI_sum(comm,sumdAd)
 
@@ -52,7 +55,8 @@ def CGM(x0, b, AXClass, maxiter=200, comm = MPI.COMM_WORLD):
         
         xi = xi + alpha*d
         if np.mod(i+1,200) == 0:
-            rnew = np.reshape(b - AXClass.AXFunc(xi),(dsize,1)) # b - A.dot(x)
+            AXFunc(xi,Ad,*args)
+            rnew = np.reshape(b - Ad,(dsize,1))
         else:
             rnew = r - alpha*Ad
 
@@ -78,4 +82,4 @@ def CGM(x0, b, AXClass, maxiter=200, comm = MPI.COMM_WORLD):
 
             break
 
-    return xi
+    return np.squeeze(xi)
