@@ -28,7 +28,7 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
                    hitmap=Maps.hitmap,                   
                    comm=comm)
     
-    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)   
+    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)    
     return np.reshape(FtZd,(FtZd.size,1))
 
 
@@ -54,10 +54,9 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
     FtZFa[:,0] = np.squeeze(a)*np.float(bl)/cn - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
 
 
-
 def FtP(m,p,bl,cn,hits):
 
-    limit = 1
+    limit = 0
     x = fBinning.bin_to_baselines(m.astype('d')   ,
                                   p.astype('i')   ,
                                   int(bl)         ,

@@ -15,7 +15,7 @@ import numpy as np
 import MPI_tools
 from mpi4py import MPI
 
-def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
+def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Verbose=False):
     rank = comm.rank
 
     #First, determine value of b:
@@ -42,6 +42,8 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
 
     #Initial Threshold:
     del0 = r.T.dot(r)
+    del0  = MPI_tools.MPI_sum(comm,del0)
+
     for i in range(maxiter):
 
         AXFunc(d,Ad,*args,comm=comm)
@@ -73,8 +75,8 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD):
 
         asum = MPI_tools.MPI_sum(comm,xi)
 
-        if rank == 0:
-            print 1e-15*del0/lim,asum,'iteration: ', i
+        if (rank == 0) & (Verbose):
+            print 'iteration: ', i, 1e-15*del0/lim
 
         if  lim < 1e-15*del0:
             if rank == 0:

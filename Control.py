@@ -30,7 +30,7 @@ def InitGuess(tod,baselength):
 
     return a0
 
-def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None):
+def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False):
     '''Execute the destriper functions. Returns the map and hit map.
     
     '''
@@ -43,24 +43,20 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None):
         bl_long = np.min([tod.size,int(bl) * 10])
 
 
-    tod -= np.median(tod)
+    a0 = InitGuess(tod,bl)
+    tod -= MPI_tools.MPI_sum(comm,a0)/MPI_tools.MPI_len(comm,a0)
 
     #Define inital guess:
     a0 = InitGuess(tod,bl)
     
     #Estimate white-noise level of the data:
-    cn = WhiteCovar.WhiteCovar(tod,bl,bl_long)
+    cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate extra maps
 
     #Return the Destriper derived values for baselines:
-    ain = a0*1.
-    a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm)
-
-    from matplotlib import pyplot
-    pyplot.plot(np.squeeze(ain),np.squeeze(a0),',')
-    pyplot.show()
+    a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm,Verbose=Verbose)
     
     Binning.BinMap_with_ext(tod,np.squeeze(a0),bl,pix,cn,Maps.m,
                             sw=Maps.sw,

@@ -59,7 +59,6 @@ def MPI_len(comm,x):
     
     s=0
     if rank==0:
-        print 'MPI_len: ', rank,vals
         s = math.fsum(vals)
         #for val in vals:
         #    s += val
