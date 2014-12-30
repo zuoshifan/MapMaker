@@ -5,7 +5,7 @@ import MPI_tools
 from mpi4py import MPI
 
 import fBinning
-import Binning
+import nBinning as Binning
 
 def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
     '''Returns solution for Ft Z d. 
@@ -25,9 +25,10 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
                    hits=Maps.hits,
                    swroot=Maps.swroot,
                    hwroot=Maps.hwroot,
+                   hitmap=Maps.hitmap,                   
                    comm=comm)
     
-    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)
+    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)   
     return np.reshape(FtZd,(FtZd.size,1))
 
 

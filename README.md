@@ -36,3 +36,12 @@ V0.1a: Changes:
 	-Fixed a number of problems with the code. Everything should
 	at least run correctly now. No guarantees it will actually
 	destripe anything though.
+
+V0.2: Changes:
+
+	-Renamed Binning.py to nBinning.py and CGM.py to nCGM.py.
+
+	-Fixed a bug where the hitmap was not being calculated.
+
+	-Destriping is fully functional on a single thread. MPI
+	functions not yet tested.

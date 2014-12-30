@@ -12,6 +12,8 @@ class MapsClass:
         if rank == 0:
             self.swroot = np.zeros(npix)
             self.hwroot = np.zeros(npix)
+            self.hitmap = np.zeros(npix)            
         else:
             self.swroot = None
             self.hwroot = None
+            self.hitmap = None       

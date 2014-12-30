@@ -2,11 +2,11 @@ import numpy as np
 from mpi4py import MPI
 import MPI_tools
 
-from CGM import CGM
+from nCGM import CGM
 from Mapping import MapsClass
 from DesFuncs import bFunc,AXFunc
 
-import Binning
+import nBinning as Binning
 import WhiteCovar
 
 #------------------------------------------------------------------------#
@@ -42,6 +42,9 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None):
     if bl_long == None: 
         bl_long = np.min([tod.size,int(bl) * 10])
 
+
+    tod -= np.median(tod)
+
     #Define inital guess:
     a0 = InitGuess(tod,bl)
     
@@ -52,4 +55,21 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None):
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate extra maps
 
     #Return the Destriper derived values for baselines:
+    ain = a0*1.
     a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm)
+
+    from matplotlib import pyplot
+    pyplot.plot(np.squeeze(ain),np.squeeze(a0),',')
+    pyplot.show()
+    
+    Binning.BinMap_with_ext(tod,np.squeeze(a0),bl,pix,cn,Maps.m,
+                            sw=Maps.sw,
+                            hw=Maps.hw,
+                            swroot=Maps.swroot,
+                            hwroot=Maps.hwroot,
+                            comm=comm)
+
+    if rank == 0:
+        return Maps.m
+    else:
+        return None
