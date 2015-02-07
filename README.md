@@ -5,6 +5,43 @@ Destriping Map-Making Software for astronomical data processing.
 
 =======
 
+Installation (See wiki for example use)
+
+Prerequistes
+
+The code in this repository was written for Python 2.7.3 and depends on the following Python modules:
+
+    NumPy
+    SciPy
+
+    mpi4py
+
+    f2py (to compile Fortran modules)
+
+If at all possible I highly recommend installing the Anaconda Python package, which will install all these modules and f2py by default.
+Install Procedure
+
+First the f2py Fortran shared libraries must be compiled.
+
+    Enter MapMaker/
+    Open: Makefile
+    Edit: COMP= to equal the fortran compiler command for your system
+    Edit: INC= to equal the directory of your Python include file
+    Save and close Makefile
+    Type: make
+
+This should compile the Fortran libraries. Next you must add the directory above MapMaker to your PYTHONPATH
+
+    If using bash type: export PYTHONPATH=$PYTHONPATH:/path/to/MapMaker
+    If using csh type: setenv PYTHONPATH /path/to/MapMaker:$PYTHONPATH
+
+Testing installation:
+
+Open Python or iPython in a terminal and type: import MapMaker . If everything has installed correctly this should work with no errors.
+
+
+======= Change-Log
+
 V0.0: Initial upload of the code. Not exactly sure if all these
 versions work well together. E.g. This map-maker probably does not
 work as it is.
@@ -45,3 +82,8 @@ V0.2: Changes:
 
 	-Destriping is fully functional on a single thread. MPI
 	functions not yet tested.
+	
+V0.3: Changes:
+	
+	-Re-organised structure so that Destriper and ML mappers both share the same tools and CGM codes.
+	-Added tutorial and instructions to wiki.
