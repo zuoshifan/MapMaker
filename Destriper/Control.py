@@ -92,6 +92,6 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
                    comm=comm)
 
     if rank == 0:
-        return Maps.sw,Maps.hw,Maps.hits
+        return Maps
     else:
         return None

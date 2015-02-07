@@ -2,6 +2,7 @@
 #Standard modules:
 import numpy as np
 from mpi4py import MPI
+import scipy.fftpack as sfft
 
 #Map-making modules:
 from MapMaker.Tools.Mapping import MapsClass
@@ -23,7 +24,7 @@ def InvertCirculant(psd,tod):
     
     #Zero pad fft's to speed them up a bobbin:
     bit2 = 2**np.ceil(np.log10(tod.size)/np.log10(2))
-    ftod  = sfft.fft(tod.astype(np.float64),n=bit2)/ps
+    ftod  = sfft.fft(tod.astype(np.float64),n=bit2)/psd
     
     #Divide each fft(d) by fft(N), inverse transform and shift vector by -1 (for reasons unknown)
     temp = np.real(sfft.ifft(ftod))*float(tod.size)**2
@@ -61,7 +62,7 @@ def AXFunc(m0,PtNPm,tod,pix,model,cn,Maps,bl,comm=None):
     Maps.m[Maps.gd] = m0[:,0]
 
     #Sample this iteration
-    NPm = InvertCirculant(model,Map.m[pix])
+    NPm = InvertCirculant(model,Maps.m[pix])
 
     Binning.BinMap(NPm,bl,pix,cn,Maps.m,
                    sw=Maps.sw,

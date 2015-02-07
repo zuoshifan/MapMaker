@@ -1,6 +1,8 @@
 #Standard modules:
 import numpy as np
 from mpi4py import MPI
+import scipy.fftpack as sfft
+import scipy.interpolate as interp
 
 #Map-making modules:
 from MapMaker.Tools import MPI_tools
@@ -11,7 +13,7 @@ from MapMaker.Tools import WhiteCovar
 from MapMaker.CGM.nCGM import CGM
 
 #Destriper modules:
-#from MLFuncs import bFunc,AXFunc
+from MLFuncs import bFunc,AXFunc
 
 
 #------------------------------------------------------------------------#
@@ -38,8 +40,8 @@ def EstimateModel(resid):
     fabs[bd] = fabs[bd+1]
 
     #Bin PSD:
-    bmdl = nBinning.DownSample(fabs[0:fabs.size/2],(fabs.size/2)/20)
-    bmid = nBinning.DownSample(np.log10(np.arange(fabs.size/2)+1),(fabs.size/2)/20)
+    bmdl = Binning.DownSample(fabs[0:fabs.size/2],(fabs.size/2)/20)
+    bmid = Binning.DownSample(np.log10(np.arange(fabs.size/2)+1),(fabs.size/2)/20)
 
     #Remove the first few bins:
     end = 10.**np.mean(np.log10(bmdl[0:3]))
@@ -78,6 +80,9 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
     
     '''
 
+    pix = pix.astype('i')
+    npix = int(npix)
+
     # Switch on MPI 
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -91,12 +96,12 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
     
     #Estimate white-noise level of the data:
     bl = 1
-    null = np.zeros(tod.size/bl_long + 1)
+    null = np.ones(tod.size/bl_long + 1)
     cn   = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
-    MapsClass.GoodPixels(pix)
+    Maps.GoodPixels(pix)
 
     #Initial noise residual == input tod:
     resid = tod*1.
@@ -122,7 +127,7 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
 
 
         #Return the Residual fit to gain drifts:
-        Maps.m[Maps.gd] = CGM(m0,bFunc,AXFunc,args=(tod,pix,model,null,Maps,bl_long),comm=comm,Verbose=Verbose)
+        Maps.m[Maps.gd] = CGM(m0,bFunc,AXFunc,args=(tod,pix,noiseModel,null,Maps,bl_long),comm=comm,Verbose=Verbose)
 
             
         mapMean = np.nanmean(Maps.m[Maps.gd])

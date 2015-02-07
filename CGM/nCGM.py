@@ -21,6 +21,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
     #First, determine value of b:
     b = bFunc(x0,*args,comm=comm)
 
+
     dsize = len(b)
     xsize = len(x0)
 
