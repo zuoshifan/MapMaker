@@ -3,7 +3,7 @@ from mpi4py import MPI
 import MPI_tools
 
 
-def WhiteCovar(x,bl,bl_long,comm=None):
+def WhiteCovar(x,bl,bl_long,comm=MPI.COMM_WORLD):
 
     #BASELINE LENGTH MUST BE EVEN TO SUBTRACT PAIRS
     nbaselines = np.int(len(x)/bl)

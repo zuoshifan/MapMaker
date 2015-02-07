@@ -1,11 +1,14 @@
 #Holds all the function for solving Ax and b.
-
+#Standard modules:
 import numpy as np
-import MPI_tools
 from mpi4py import MPI
 
-import fBinning
-import nBinning as Binning
+#Map-making modules:
+from MapMaker.Tools.Mapping import MapsClass
+from MapMaker.Tools import nBinning as Binning
+from MapMaker.Tools import fBinning
+from MapMaker.Tools import MPI_tools
+
 
 def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
     '''Returns solution for Ft Z d. 

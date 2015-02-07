@@ -17,3 +17,12 @@ class MapsClass:
             self.swroot = None
             self.hwroot = None
             self.hitmap = None       
+
+    def GoodPixels(self,pix):
+        '''
+        Save unique pixel indexes in map
+        
+        '''
+
+        self.gd = np.unique(np.sort(pix))
+        self.gd = self.gd.astype('i')
