@@ -5,17 +5,33 @@ Solves: x for a linear equation Ax = b.
 
 Inputs:
 
-A function which describes Ax <-- Should return a column vector.
-An array which describes b.
+A function which describes Ax <-- Modify this vector -in place-.
+An array which describes b <-- Returns a column vector.
 An initial guess for x.
 
 '''
 
 import numpy as np
-import MPI_tools
 from mpi4py import MPI
 
+from MapMaker.Tools import MPI_tools
+
 def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Verbose=False):
+    '''
+    Returns x for a linear system Ax = b where A is a symmetric, positive-definite matrix.
+
+    Arguments
+    x0  -- Initial guess at x
+    bFunc -- Function describing how to generate b.
+    AXFunc -- Function describing how to generate Ax.
+    
+    Keyword Arguments
+    args -- Optional extra arguments for bFunc and AXFunc
+    maxiter -- Maximum iterations of CGM loop.
+    comm -- MPI.COMM_WORLD
+    Verbose -- Print out distance to solution for each CGM iteration.
+    '''
+
     rank = comm.rank
 
     #First, determine value of b:
@@ -47,8 +63,10 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
 
     for i in range(maxiter):
 
+        #Generate a new conjugate search vector Ad using d:
         AXFunc(d,Ad,*args,comm=comm)
 
+        #Calculate search vector:
         sumr2  = r.T.dot(r)
         sumdAd = d.T.dot(Ad)
         sumr2  = MPI_tools.MPI_sum(comm,sumr2)

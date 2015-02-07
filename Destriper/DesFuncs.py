@@ -11,7 +11,16 @@ from MapMaker.Tools import MPI_tools
 
 
 def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
-    '''Returns solution for Ft Z d. 
+    '''
+    Returns solution for Ft Z d. 
+
+    Arguments
+    a0 -- Offsets, not used.
+    tod -- input data
+    bl  -- baseline length
+    pix -- pixel coordinate vector (tod.size)
+    cn -- estimated white-noise variance vector
+    Maps -- Object holding map data
     
     '''
     if comm:
@@ -36,7 +45,20 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
 
 
 def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
-    '''Returns solution for Ft Z F a
+    '''
+    Returns solution for Ft Z F a
+
+    Arguments
+    a0 -- Offsets for this CGM iteration.
+    FtZFa -- This iterations guess at the conjugate vector to a0. Modified in place.
+
+    tod -- input data
+    bl  -- baseline length
+    pix -- pixel coordinate vector (tod.size)
+    cn -- estimated white-noise variance vector
+    Maps -- Object holding map data
+    
+
     '''
 
     #Make a map of the baselines:
@@ -58,6 +80,16 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
 
 
 def FtP(m,p,bl,cn,hits):
+    '''
+    Returns stretched out map binned into baselines
+
+    Arguments
+    m -- map vector
+    p -- pixel vector
+    bl -- baseline length
+    cn -- white-noise variances vector
+    hits -- min hits (always set to 0)
+    '''
 
     limit = 0
     x = fBinning.bin_to_baselines(m.astype('d')   ,
@@ -69,6 +101,13 @@ def FtP(m,p,bl,cn,hits):
     return x
 
 def Ft(x,bl,C_N):
+    '''
+    Return bin data into baselines
+
+    x -- tod to be binned into baselines
+    bl -- baseline length
+    C_N -- white-noise variances vector
+    '''
 
     #BIN TOD TO BASELINES
     n = len(x)/int(bl)
