@@ -72,7 +72,7 @@ def BinMapPol_Angs(x,bl,p,phi,cn,Maps):
 
 
     #Loop through angle maps
-    noweights = cn*0. + 1.
+    #noweights = cn*0. + 1.
     maps = [Maps.sc,Maps.s2,Maps.c2]
     funcs = [lambda p0:  np.sin(p0)*np.cos(p0),
              lambda p0:  np.sin(p0)*np.sin(p0),
@@ -82,16 +82,12 @@ def BinMapPol_Angs(x,bl,p,phi,cn,Maps):
         Maps.sw[:] = 0.
         Maps.hw[:] = 0.
         
-        Maps.sw[:],Maps.hw[:] = fBinning.bin_pix(funcs[i](phi),p,noweights,int(bl),Maps.sw,Maps.hw)
+        Maps.sw[:],Maps.hw[:] = fBinning.bin_pix(funcs[i](phi),p,cn,int(bl),Maps.sw,Maps.hw)
         
         if i == 0:
             gd = np.where(Maps.hw != 0)[0]
 
         m[gd] = Maps.sw[gd]/Maps.hw[gd]
-
-    Maps.sw[:] = 0.
-    Maps.hw[:] = 0.    
-    Maps.sw[:],Maps.hw[:] = fBinning.bin_pix(phi*0. + 1.,p,noweights,int(bl),Maps.sw,Maps.hw)
         
 
     Maps.DetA[:] = (Maps.c2 * Maps.s2 - Maps.sc**2 )
@@ -118,7 +114,7 @@ def BinMapPol(x,bl,p,phi,cn,Maps):
         Maps.sw[:] = 0.
         Maps.hw[:] = 0. 
         Maps.sw[:],Maps.hw[:] = fBinning.bin_pix(funcs[i](x,phi),p,cn,int(bl),Maps.sw,Maps.hw)
-        
+
         if i == 0:
             gd = np.where(Maps.hw != 0)[0]
 

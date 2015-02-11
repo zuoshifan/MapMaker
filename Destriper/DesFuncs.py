@@ -36,21 +36,16 @@ def bFunc(a0,tod,bl,pix,cn,cn_mask,Maps,phi,comm=None):
 
     #Make noisey Q and U maps of tod:
     Binning.BinMapPol(tod,bl,pix,phi,cn_mask,Maps)
-    #import healpy as hp
-    from matplotlib import pyplot
-    #hp.mollview(Maps.q,rot=[83,22],max=1,min=-1)
-    #hp.mollview(Maps.u,rot=[83,22],max=1,min=-1)
-    pyplot.plot( Ft(tod,bl,cn),',')
-    pyplot.figure()
-    pyplot.plot( Ft(Maps.q[pix]*np.sin(phi) + Maps.u[pix]*np.cos(phi),bl,cn),',')
-    #FtP(Maps,phi,pix,bl,cn_mask,Maps.hits)/float(bl)     ,',')
-    pyplot.show()
 
+    FtZd = Ft(tod,bl,cn) - FtP(Maps,phi,pix,bl,cn_mask,Maps.hits)
+
+
+    Maps.qi = Maps.q*1.
+    Maps.ui = Maps.u*1.
+
+    tod = None
     
-
-    FtZd = Ft(tod,bl,cn) - Ft(Maps.q[pix]*np.sin(phi) + Maps.u[pix]*np.cos(phi),bl,cn) #FtP(Maps,phi,pix,bl,cn_mask,Maps.hits)
     return np.reshape(FtZd,(FtZd.size,1))
-
 
 def AXFunc(a,FtZFa,tod,bl,pix,cn,cn_mask,Maps,phi,comm=None):
     '''
@@ -74,15 +69,6 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,cn_mask,Maps,phi,comm=None):
 
     #Make a map of the baselines:
     Binning.BinMapPol(np.repeat(np.squeeze(a),bl),bl,pix,phi,cn_mask,Maps)
-
-    #import healpy as hp
-    #from matplotlib import pyplot
-    #pyplot.plot(tod,',')
-    #pyplot.plot(np.repeat(np.squeeze(a),bl),',')
-    #pyplot.plot(np.squeeze(a)*np.float(bl)/cn1,',')
-    #pyplot.figure()
-    #pyplot.plot(Ft(Maps.q[pix]*np.sin(phi) + Maps.u[pix]*np.cos(phi),bl,cn),',')
-    #pyplot.show()
     
     #Get some of the baselines, e.g. 1^T a :
     if comm:
@@ -90,13 +76,8 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,cn_mask,Maps,phi,comm=None):
     else:
         asum = np.nansum(a)
 
-    #pyplot.plot(FtP(Maps,phi,pix,bl,cn_mask,Maps.hits),',')
-    #pyplot.show()
-
-    #
-        
     #Calculate weighted baselength values and subtract the sum of each baseline of pixels:
-    FtZFa[:,0] = np.squeeze(a)*np.float(bl)/cn1 - Ft(Maps.q[pix]*np.sin(phi) + Maps.u[pix]*np.cos(phi),bl,cn)  - asum#FtP(Maps,phi,pix,bl,cn_mask,Maps.hits) - asum
+    FtZFa[:,0] = np.squeeze(a)*np.float(bl)/cn1 - FtP(Maps,phi,pix,bl,cn_mask,Maps.hits)  - asum#FtP(Maps,phi,pix,bl,cn_mask,Maps.hits) - asum
 
 
 def FtP(m,phi,p,bl,cn,hits):
@@ -133,12 +114,16 @@ def Ft(x,bl,cn):
 
     #BIN TOD TO BASELINES
     n = len(x)/int(bl)
-    out = np.zeros(n)
-    cn1 = np.reshape(cn,(bl,n))
-    cn1 = np.sum(cn1,axis=0)
-    #out = np.sum(cn1,axis=0)
+    #out = np.zeros(n)
+    cn1 = np.reshape(cn,(n,bl))
+    cn1 = np.sum(cn1,axis=1)
+    x1 = np.reshape(x,(n,bl))
+    x1 = np.sum(x1,axis=1)
 
-    for i in range(n):
-        out[i] = np.sum(x[i*bl : (i+1)*bl])/ cn1[i]
+    out = x1/cn1
 
+    #for i in range(n):
+    #    out[i] = np.sum(x[i*bl : (i+1)*bl])/ cn1[i]
+
+    #print out[0:5],out2[0:5]
     return out

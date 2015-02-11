@@ -5,6 +5,11 @@ class MapsClass:
     def __init__(self,npix,rank=0):
 
         self.m = np.zeros(npix)
+
+        self.qi = np.zeros(npix)
+        self.ui = np.zeros(npix)
+
+        
         self.sw = np.zeros(npix)
         self.hw = np.zeros(npix)
         self.hits = np.zeros(npix)

@@ -25,7 +25,7 @@ subroutine bin_to_baselines(q,u,phi,pix,bl,cn,hitmap,limit,nsamp,pixels,nb,x)
      xi = (i-1)/bl + 1
      ip = pix(i) + 1
 
-     x(xi) = x(xi) + ( q(ip)*sin(phi(i)) + u(ip)*cos(phi(i)) )/cn(i)
+     x(xi) = x(xi) + ( q(ip)*sin(phi(i)) + u(ip)*cos(phi(i)) )/cn(i)/real(bl)
   enddo
 
 end subroutine bin_to_baselines

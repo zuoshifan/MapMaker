@@ -95,12 +95,17 @@ def Destriper(tod,bl,pix,npix,phi,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False
     #               hwroot=Maps.hwroot,
     #               comm=comm)
 
-    from matplotlib import pyplot
-    pyplot.plot(tod,',')
-    pyplot.plot(np.repeat(np.squeeze(a0),bl),',')
-    pyplot.show()
+    #from matplotlib import pyplot
+    #pyplot.plot(tod,',')
+    #pyplot.plot(np.repeat(np.squeeze(a0),bl),',')
+    #pyplot.show()
     
-    Binning.BinMapPol(tod-np.repeat(np.squeeze(a0),bl),bl,pix,phi,cn,Maps)
+    #Binning.BinMapPol(tod-np.repeat(np.squeeze(a0),bl),bl,pix,phi,cn,Maps)
+    Binning.BinMapPol(np.repeat(np.squeeze(a0),bl),bl,pix,phi,cn_mask,Maps)
+    
+    Maps.q = Maps.qi - Maps.q
+    Maps.u = Maps.ui - Maps.u
+    
 
     if rank == 0:
         return Maps
