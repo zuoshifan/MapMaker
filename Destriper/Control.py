@@ -84,7 +84,12 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
     #                        hwroot=Maps.hwroot,
     #                        comm=comm)
 
-    Binning.BinMap(tod-np.repeat(np.squeeze(a0),bl),bl,pix,cn,Maps.m,
+    tod = tod-np.repeat(np.squeeze(a0),bl)
+
+    #Estimate white-noise level of the data:
+    cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+    
+    Binning.BinMap(tod,bl,pix,cn,Maps.m,
                    sw=Maps.sw,
                    hw=Maps.hw,
                    swroot=Maps.swroot,
