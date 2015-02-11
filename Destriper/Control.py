@@ -3,12 +3,12 @@ import numpy as np
 from mpi4py import MPI
 
 #Map-making modules:
-from MapMaker.Tools import MPI_tools
-from MapMaker.Tools.Mapping import MapsClass
-from MapMaker.Tools import nBinning as Binning
-from MapMaker.Tools import WhiteCovar
+from Polarisation.Tools import MPI_tools
+from Polarisation.Tools.Mapping import MapsClass
+from Polarisation.Tools import nBinning as Binning
+from Polarisation.Tools import WhiteCovar
 
-from MapMaker.CGM.nCGM import CGM
+from Polarisation.CGM.nCGM import CGM
 
 #Destriper modules:
 from DesFuncs import bFunc,AXFunc
@@ -36,7 +36,7 @@ def InitGuess(tod,baselength):
 
     return a0
 
-def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter=300,Medians=False):
+def Destriper(tod,bl,pix,npix,phi,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter=300,Medians=False):
     '''
     Return Destriped maps for a given set of TOD.
 
@@ -61,6 +61,7 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
         bl_long = np.min([tod.size,int(bl) * 10])
 
 
+    pix = pix.astype('i')
     a0   = InitGuess(tod,bl)
     tod -= MPI_tools.MPI_sum(comm,a0)/MPI_tools.MPI_len(comm,a0)
 
@@ -70,12 +71,15 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
     #Estimate white-noise level of the data:
     cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
 
+    cn_mask = np.repeat(cn,bl)    
+    cn = np.repeat(cn,bl)
+
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
 
     if not Medians:
-        #Return the Destriper derived values for baselines:
-        a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm,Verbose=Verbose,maxiter=maxiter)
+        #Return the Destriper derived values for baselines: 
+        a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,cn_mask,Maps,phi),comm=comm,Verbose=Verbose,maxiter=maxiter)
     
     #Binning.BinMap_with_ext(tod,np.squeeze(a0),bl,pix,cn,Maps.m,
     #                        sw=Maps.sw,
@@ -84,12 +88,19 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
     #                        hwroot=Maps.hwroot,
     #                        comm=comm)
 
-    Binning.BinMap(tod-np.repeat(np.squeeze(a0),bl),bl,pix,cn,Maps.m,
-                   sw=Maps.sw,
-                   hw=Maps.hw,
-                   swroot=Maps.swroot,
-                   hwroot=Maps.hwroot,
-                   comm=comm)
+    #Binning.BinMap(tod-np.repeat(np.squeeze(a0),bl),bl,pix,cn,Maps.m,
+    #               sw=Maps.sw,
+    #               hw=Maps.hw,
+    #               swroot=Maps.swroot,
+    #               hwroot=Maps.hwroot,
+    #               comm=comm)
+
+    from matplotlib import pyplot
+    pyplot.plot(tod,',')
+    pyplot.plot(np.repeat(np.squeeze(a0),bl),',')
+    pyplot.show()
+    
+    Binning.BinMapPol(tod-np.repeat(np.squeeze(a0),bl),bl,pix,phi,cn,Maps)
 
     if rank == 0:
         return Maps

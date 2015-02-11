@@ -8,6 +8,18 @@ class MapsClass:
         self.sw = np.zeros(npix)
         self.hw = np.zeros(npix)
         self.hits = np.zeros(npix)
+
+        self.q = np.zeros(npix)
+        self.u = np.zeros(npix)
+
+        self.c2 = np.zeros(npix)
+        self.s2 = np.zeros(npix)
+        self.sc = np.zeros(npix)
+
+        self.vs = np.zeros(npix)
+        self.vc = np.zeros(npix)
+        self.DetA = np.zeros(npix)
+
         
         if rank == 0:
             self.swroot = np.zeros(npix)

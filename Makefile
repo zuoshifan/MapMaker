@@ -1,5 +1,5 @@
-COMP=#Fortran Compiler command
-INC=-I#/Path/To/Python/Include
+COMP=ifort
+INC=-I/local/sharper/anaconda/include
 
 all: Binning
 

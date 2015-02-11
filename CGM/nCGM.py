@@ -14,7 +14,7 @@ An initial guess for x.
 import numpy as np
 from mpi4py import MPI
 
-from MapMaker.Tools import MPI_tools
+from ..Tools import MPI_tools
 
 def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Verbose=False):
     '''
