@@ -6,13 +6,13 @@
 
 ! BASELINE BINNING ROUTINES:
 
-subroutine bin_to_baselines(m,pix,bl,cn,hitmap,limit,nsamp,pixels,nb,x)
+subroutine bin_to_baselines(m,pix,bl,cn,nsamp,pixels,nb,x)
   implicit none
 
-  integer nsamp,pixels,nb,bl,limit
+  integer nsamp,pixels,nb,bl
 !f2py intent(in) nsamp, pixels, nb, bl
-  real*8 m(pixels),hitmap(pixels),cn(nb)
-!f2py intent(in) m,hitmap,cn
+  real*8 m(pixels),cn(nsamp)
+!f2py intent(in) m,cn
   integer pix(nsamp)
 !f2py intent(in) pix
   real*8 x(nb)
@@ -25,18 +25,34 @@ subroutine bin_to_baselines(m,pix,bl,cn,hitmap,limit,nsamp,pixels,nb,x)
      xi = (i-1)/bl + 1
      ip = pix(i) + 1
 
-     if (hitmap(ip) > limit) then 
-        x(xi) = x(xi) + m(ip)/cn(xi)
-     else
-        x(xi) = 0.0
-     end if
+     x(xi) = x(xi) + m(ip)/cn(i)
   enddo
 
 end subroutine bin_to_baselines
 
+subroutine bin_ft_ext(a,cn,bl,nb,nsamp,x)
+  implicit none
+
+  integer nb,nsamp,bl
+!f2py intent(in) nb,nsamp,bl
+  real*8 a(nb),cn(nsamp)
+!f2py intent(in) a,cn
+  real*8 x(nb)
+!f2py intent(out) x
+  
+  integer i,xi
+
+  do i=1,nsamp
+     xi = (i-1)/bl + 1
+
+     x(xi) = x(xi) + a(xi)/cn(i)
+  enddo
+
+end subroutine bin_ft_ext
+
 ! MAP BINNING ROUTINES:
 
-subroutine bin_pix(x,pix,cn,bl,sw,hw,nsamp,pixels,nb)
+subroutine bin_pix(x,pix,cn,sw,hw,nsamp,pixels)
   !x     = input TOD (input)
   !pix   = array of pixel numbers (input)
   !cn    = array of weights for each TOD value (input)
@@ -47,13 +63,11 @@ subroutine bin_pix(x,pix,cn,bl,sw,hw,nsamp,pixels,nb)
 
   implicit none
 
-  integer nsamp
+  integer nsamp 
   integer pixels
-  integer nb
-  integer bl
-!f2py intent(in) nsamp, pixels,bl,nb
+!f2py intent(in) nsamp, pixels
 
-  real*8 cn(nb)
+  real*8 cn(nsamp)
   real*8 x(nsamp)
   integer pix(nsamp)
 !f2py  intent(in)  cn, x ,pix
@@ -66,13 +80,13 @@ subroutine bin_pix(x,pix,cn,bl,sw,hw,nsamp,pixels,nb)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( ((i-1)/bl) +1 )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( ((i-1)/bl) +1 )
+     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( i )
+     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
   end do
 
 end subroutine bin_pix
 
-subroutine bin_pix_hits(x,pix,cn,bl,sw,hw,hits,nsamp,pixels,nb)
+subroutine bin_pix_hits(x,pix,cn,sw,hw,hits,nsamp,pixels)
   !x     = input TOD (input)
   !pix   = array of pixel numbers (input)
   !cn    = array of weights for each TOD value (input)
@@ -80,17 +94,15 @@ subroutine bin_pix_hits(x,pix,cn,bl,sw,hw,hits,nsamp,pixels,nb)
 
   !sw   = signal*weights map (in/output)
   !hw   = weights map (in/output)
-  !hits = hits map (output)
+  !hits = hits map (output) 
 
   implicit none
 
   integer nsamp
   integer pixels
-  integer nb
-  integer bl
-!f2py intent(in) nsamp, pixels,bl,nb
+!f2py intent(in) nsamp, pixels
 
-  real*8 cn(nb)
+  real*8 cn(nsamp)
   real*8 x(nsamp)
   integer pix(nsamp)
 !f2py  intent(in)  cn, x ,pix
@@ -104,8 +116,8 @@ subroutine bin_pix_hits(x,pix,cn,bl,sw,hw,hits,nsamp,pixels,nb)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( ((i-1)/bl) +1 )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( ((i-1)/bl) +1 )
+     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
+     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
      hits(pix(i)+1) = hits(pix(i)+1) + 1
   end do
 
@@ -128,7 +140,7 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   integer bl
 !f2py intent(in) nsamp, pixels,bl,nb
 
-  real*8 cn(nb)
+  real*8 cn(nsamp)
   real*8 x(nb)
   integer pix(nsamp)
 !f2py  intent(in)  cn, x ,pix
@@ -140,8 +152,8 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x( ((i-1)/bl) +1 )/cn( ((i-1)/bl) +1 )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( ((i-1)/bl) +1 )
+     sw(pix(i)+1)   = sw(pix(i)+1)   + x( ((i-1)/bl) +1 )/cn( i )
+     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
   end do
 
 end subroutine bin_pix_ext
@@ -182,7 +194,7 @@ subroutine bin_pix_with_ext(x,a,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   end do
 
 end subroutine bin_pix_with_ext
-
+ 
 
 subroutine DownSample(a,newlen,alen,out,err)
   implicit none

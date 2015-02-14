@@ -3,12 +3,12 @@ import numpy as np
 from mpi4py import MPI
 
 #Map-making modules:
-from MapMaker.Tools import MPI_tools
-from MapMaker.Tools.Mapping import MapsClass
-from MapMaker.Tools import nBinning as Binning
-from MapMaker.Tools import WhiteCovar
+from ..Tools import MPI_tools
+from ..Tools.Mapping import MapsClass
+from ..Tools import nBinning as Binning
+from ..Tools import WhiteCovar
 
-from MapMaker.CGM.nCGM import CGM
+from ..CGM.nCGM import CGM
 
 #Destriper modules:
 from DesFuncs import bFunc,AXFunc
@@ -36,7 +36,7 @@ def InitGuess(tod,baselength):
 
     return a0
 
-def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter=300,Medians=False):
+def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter=300,Medians=False,mask=None):
     '''
     Return Destriped maps for a given set of TOD.
 
@@ -69,6 +69,9 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
     
     #Estimate white-noise level of the data:
     cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+    cn = np.repeat(cn,bl)
+    if not isinstance(mask,type(None)):
+        cn[(mask == False)] = 1e24
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
@@ -77,17 +80,10 @@ def Destriper(tod,bl,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,max
         #Return the Destriper derived values for baselines:
         a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm,Verbose=Verbose,maxiter=maxiter)
     
-    #Binning.BinMap_with_ext(tod,np.squeeze(a0),bl,pix,cn,Maps.m,
-    #                        sw=Maps.sw,
-    #                        hw=Maps.hw,
-    #                        swroot=Maps.swroot,
-    #                        hwroot=Maps.hwroot,
-    #                        comm=comm)
-
     tod = tod-np.repeat(np.squeeze(a0),bl)
 
     #Estimate white-noise level of the data:
-    cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+    #cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
     
     Binning.BinMap(tod,bl,pix,cn,Maps.m,
                    sw=Maps.sw,

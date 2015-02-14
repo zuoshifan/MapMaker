@@ -4,10 +4,10 @@ import numpy as np
 from mpi4py import MPI
 
 #Map-making modules:
-from MapMaker.Tools.Mapping import MapsClass
-from MapMaker.Tools import nBinning as Binning
-from MapMaker.Tools import fBinning
-from MapMaker.Tools import MPI_tools
+from ..Tools.Mapping import MapsClass
+from ..Tools import nBinning as Binning
+from ..Tools import fBinning
+from ..Tools import MPI_tools
 
 
 def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
@@ -39,8 +39,9 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
                    hwroot=Maps.hwroot,
                    hitmap=Maps.hitmap,                   
                    comm=comm)
+
     
-    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)    
+    FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)
     return np.reshape(FtZd,(FtZd.size,1))
 
 
@@ -74,10 +75,11 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
         asum = MPI_tools.MPI_sum(comm,a)
     else:
         asum = np.nansum(a)
+        
 
-    #Calculate weighted baselength values and subtract the sum of each baseline of pixels:
-    FtZFa[:,0] = np.squeeze(a)*np.float(bl)/cn - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
-
+    #Calculate weighted baselength values and subtract the sum of each baseline of pixels:    
+    FtZFa[:,0] =  Ft_ext(np.squeeze(a),bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
+    
 
 def FtP(m,p,bl,cn,hits):
     '''
@@ -92,15 +94,17 @@ def FtP(m,p,bl,cn,hits):
     '''
 
     limit = 0
+
     x = fBinning.bin_to_baselines(m.astype('d')   ,
                                   p.astype('i')   ,
                                   int(bl)         ,
                                   cn.astype('d')  ,
-                                  hits.astype('i'),limit)
+                                  len(p)/int(bl))
+
 
     return x
 
-def Ft(x,bl,C_N):
+def Ft(x,bl,cn):
     '''
     Return bin data into baselines
 
@@ -113,6 +117,21 @@ def Ft(x,bl,C_N):
     n = len(x)/int(bl)
     out = np.zeros(n)
     for i in range(n):
-        out[i] = np.sum(x[i*bl : (i+1)*bl])/ C_N[i]
+        out[i] = np.sum(x[i*bl : (i+1)*bl]/cn[i*bl : (i+1)*bl])
 
+
+    return out
+
+
+def Ft_ext(x,bl,cn):
+    '''
+    Return bin data into baselines
+
+    x -- tod to be binned into baselines
+    bl -- baseline length
+    C_N -- white-noise variances vector
+    '''
+
+    #BIN TOD TO BASELINES
+    out = fBinning.bin_ft_ext(x,cn,bl)
     return out
