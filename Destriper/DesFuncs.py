@@ -79,7 +79,6 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
 
     #Calculate weighted baselength values and subtract the sum of each baseline of pixels:    
     FtZFa[:,0] =  Ft_ext(np.squeeze(a),bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
-    
 
 def FtP(m,p,bl,cn,hits):
     '''

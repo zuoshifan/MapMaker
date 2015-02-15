@@ -30,11 +30,9 @@ def BinMap(x,bl,p,cn,m,sw=[None],hw=[None],hits=[None],swroot=None,hwroot=None,h
 
     #LOOP THROUGH EACH MAP PIXEL TO PRODUCE MAP (AND WEIGHT MAP)
     if hits[0] != None:
-        print x.size,p.size,cn.size 
         sw[:],hw[:],hits[:] = fBinning.bin_pix_hits(x,p,cn,sw,hw,hits)
     else: 
         sw[:],hw[:] = fBinning.bin_pix(x,p,cn,sw,hw)
-        print 'MAP',np.sum(sw),np.sum(hw)
             
     #Sum up on root node:
     comm.Reduce(sw  ,swroot  ,op=MPI.SUM,root=0)
