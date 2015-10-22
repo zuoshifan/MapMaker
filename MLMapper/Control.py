@@ -1,11 +1,19 @@
 #Standard modules:
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
+
 import numpy as np
-from mpi4py import MPI
+
+
 import scipy.fftpack as sfft
 import scipy.interpolate as interp
 
 #Map-making modules:
-from MapMaker.Tools import MPI_tools
+#from MapMaker.Tools import MPI_tools
 from MapMaker.Tools.Mapping import MapsClass
 from MapMaker.Tools import nBinning as Binning
 from MapMaker.Tools import WhiteCovar
@@ -63,7 +71,7 @@ def EstimateModel(resid):
 
 
 
-def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter=3):
+def MLMapper(tod,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=3,cn=None):
     '''
     Return Destriped maps for a given set of TOD.
 
@@ -84,8 +92,14 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
     npix = int(npix)
 
     # Switch on MPI 
-    size = comm.Get_size()
-    rank = comm.Get_rank()
+    if f_found:
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+    else:
+        comm = None
+        rank = 0
+        pass
 
     #If user provides no 'long' baselength, estimate it to be a quarter of the tod size or 2 samples.
     if bl_long == None: 
@@ -97,7 +111,10 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
     #Estimate white-noise level of the data:
     bl = 1
     null = np.ones(tod.size/bl_long + 1)
-    cn   = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+    #cn   = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+    if isinstance(cn,type(None)):
+        cn = WhiteCovar.WhiteCovar(tod,bl_long,bl_long,comm=comm)
+        cn = np.repeat(cn,bl_long)
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
@@ -123,11 +140,12 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
         if Verbose:
             print 'NOISE ITERATION: ', iteration
 
+        #bit2 = 2**np.ceil(np.log10(resid.size)/np.log10(2))
         noiseModel = EstimateModel(resid)
 
 
         #Return the Residual fit to gain drifts:
-        Maps.m[Maps.gd] = CGM(m0,bFunc,AXFunc,args=(tod,pix,noiseModel,null,Maps,bl_long),comm=comm,Verbose=Verbose)
+        Maps.m[Maps.gd] = CGM(m0,bFunc,AXFunc,args=(tod,pix,noiseModel,null,cn,Maps,bl_long),comm=comm,Verbose=Verbose)
 
             
         mapMean = np.nanmean(Maps.m[Maps.gd])
@@ -135,4 +153,4 @@ def MLMapper(tod,pix,npix,comm=MPI.COMM_WORLD,bl_long=None,Verbose=False,maxiter
         #Calculate new noise residual:
         resid = tod - (Maps.m[pix] - mapMean)
 
-    return Maps.m
+    return Maps

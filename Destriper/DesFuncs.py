@@ -1,14 +1,19 @@
 #Holds all the function for solving Ax and b.
 #Standard modules:
 import numpy as np
-from mpi4py import MPI
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
 
 #Map-making modules:
 from ..Tools.Mapping import MapsClass
 from ..Tools import nBinning as Binning
 from ..Tools import fBinning
-from ..Tools import MPI_tools
 
+import time
 
 def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
     '''
@@ -42,6 +47,7 @@ def bFunc(a0,tod,bl,pix,cn,Maps,comm=None):
 
     
     FtZd = Ft(tod,bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits)
+    
     return np.reshape(FtZd,(FtZd.size,1))
 
 
@@ -62,23 +68,27 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,comm=None):
 
     '''
 
-    #Make a map of the baselines:
-    Binning.BinMap_ext(a,bl,pix,cn,Maps.m,
+    #Make a map of the baselines:    
+    Binning.BinMap_ext(a[:,0],bl,pix,cn,Maps.m,
                        sw=Maps.sw,
                        hw=Maps.hw,
                        swroot=Maps.swroot,
                        hwroot=Maps.hwroot,
                        comm=comm)
+
     
     #Get some of the baselines, e.g. 1^T a :
-    if comm:
+    if not isinstance(comm,type(None)):
         asum = MPI_tools.MPI_sum(comm,a)
     else:
         asum = np.nansum(a)
-        
 
-    #Calculate weighted baselength values and subtract the sum of each baseline of pixels:    
-    FtZFa[:,0] =  Ft_ext(np.squeeze(a),bl,cn) - FtP(Maps.m,pix,bl,cn,Maps.hits) - asum
+
+    #Calculate weighted baselength values and subtract the sum of each baseline of pixels:
+    
+    FtZFa[:,0] =  Ft_ext(a[:,0],bl,cn)
+    FtZFa[:,0] -= FtP(Maps.m,pix,bl,cn,Maps.hits)
+    FtZFa[:,0] -= asum
 
 def FtP(m,p,bl,cn,hits):
     '''

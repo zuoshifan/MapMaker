@@ -1,3 +1,24 @@
+SUBROUTINE sort(a,n)
+  INTEGER n
+  REAL*8 a(n)
+  REAL*8 temp
+  INTEGER :: i, j
+  LOGICAL :: swapped = .TRUE.
+
+  DO j = SIZE(a)-1, 1, -1
+    swapped = .FALSE.
+    DO i = 1, j
+      IF (a(i) > a(i+1)) THEN
+        temp = a(i)
+        a(i) = a(i+1)
+        a(i+1) = temp
+        swapped = .TRUE.
+      END IF
+    END DO
+    IF (.NOT. swapped) EXIT
+  END DO
+END SUBROUTINE sort
+
 !! BINNING.F90
 !
 ! BINNING: A SET OF ROUTINES FOR BINNING TOD INTO MAPS AND BASELINES.
@@ -25,7 +46,10 @@ subroutine bin_to_baselines(m,pix,bl,cn,nsamp,pixels,nb,x)
      xi = (i-1)/bl + 1
      ip = pix(i) + 1
 
-     x(xi) = x(xi) + m(ip)/cn(i)
+     if (cn(i) < 1e20) then 
+        x(xi) = x(xi) + m(ip)/cn(i)
+     endif
+
   enddo
 
 end subroutine bin_to_baselines
@@ -45,7 +69,10 @@ subroutine bin_ft_ext(a,cn,bl,nb,nsamp,x)
   do i=1,nsamp
      xi = (i-1)/bl + 1
 
-     x(xi) = x(xi) + a(xi)/cn(i)
+     if (cn(i) < 1e20) then 
+        x(xi) = x(xi) + a(xi)/cn(i)
+     endif
+
   enddo
 
 end subroutine bin_ft_ext
@@ -80,8 +107,11 @@ subroutine bin_pix(x,pix,cn,sw,hw,nsamp,pixels)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( i )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+
+     if (cn(i) < 1e20) then 
+        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( i )
+        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+     endif
   end do
 
 end subroutine bin_pix
@@ -116,12 +146,87 @@ subroutine bin_pix_hits(x,pix,cn,sw,hw,hits,nsamp,pixels)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
-     hits(pix(i)+1) = hits(pix(i)+1) + 1
+     if (cn(i) < 1e20) then 
+        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
+        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
+        hits(pix(i)+1) = hits(pix(i)+1) + 1
+     endif
+
   end do
 
 end subroutine bin_pix_hits
+
+subroutine median(a,med,nsamp)
+  !USE m_mrgrnk
+  implicit none
+
+  integer  nsamp
+!f2py intent(in) nsamp
+
+  real*8 ,intent(in) :: a(nsamp)
+!f2py intent(in) a
+
+  real*8 ,intent(out) :: med
+!f2py intent(out) median
+
+  real*8 ac(nsamp)
+  integer indices(nsamp)
+
+  ac = a
+  call sort(ac,size(ac))
+
+  if (nsamp > 0) then
+     if ( mod(nsamp,2) == 0) then
+        med = (ac(nsamp/2 + 1) + ac(nsamp/2))/2.0
+     else
+        med = ac(nsamp/2 + 1)
+     end if
+  else
+     med = 1e-24
+  end if
+end subroutine median
+
+
+subroutine bin_pix_hits_median(x,pix,cn,sw,hw,hits,nsamp,pixels)
+  !x     = input TOD (input)
+  !pix   = array of pixel numbers (input)
+  !cn    = array of weights for each TOD value (input)
+  !bl    = baseline length (input)
+
+  !sw   = signal*weights map (in/output)
+  !hw   = weights map (in/output)
+  !hits = hits map (output) 
+
+  implicit none
+
+  integer nsamp
+  integer pixels
+!f2py intent(in) nsamp, pixels
+
+  real*8 cn(nsamp)
+  real*8 x(nsamp)
+  integer pix(nsamp)
+!f2py  intent(in)  cn, x ,pix
+
+  real*8 sw(pixels)
+  real*8 hw(pixels)
+  real*8 hits(pixels)
+!f2py intent(in,out) sw,hw,hits
+
+
+  integer i
+ 
+  do i=1, nsamp
+     if (cn(i) < 1e20) then 
+        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
+        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
+        hits(pix(i)+1) = hits(pix(i)+1) + 1
+     endif
+
+  end do
+
+end subroutine bin_pix_hits_median
+
 
 subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   !x     = input TOD (input)
@@ -152,8 +257,10 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   integer i
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + x( ((i-1)/bl) +1 )/cn( i )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+     if (cn(i) < 1e20) then 
+        sw(pix(i)+1)   = sw(pix(i)+1)   + x( ((i-1)/bl) +1 )/cn( i )
+        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+     endif
   end do
 
 end subroutine bin_pix_ext

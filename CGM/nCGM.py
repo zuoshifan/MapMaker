@@ -12,11 +12,15 @@ An initial guess for x.
 '''
 
 import numpy as np
-from mpi4py import MPI
 
-from MapMaker.Tools import MPI_tools
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
 
-def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Verbose=False):
+def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False):
     '''
     Returns x for a linear system Ax = b where A is a symmetric, positive-definite matrix.
 
@@ -32,7 +36,14 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
     Verbose -- Print out distance to solution for each CGM iteration.
     '''
 
-    rank = comm.rank
+    # Switch on MPI 
+    if f_found:
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+        pass
 
     #First, determine value of b:
     b = bFunc(x0,*args,comm=comm)
@@ -59,7 +70,10 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
 
     #Initial Threshold:
     del0 = r.T.dot(r)
-    del0  = MPI_tools.MPI_sum(comm,del0)
+    if f_found:
+        del0  = MPI_tools.MPI_sum(comm,del0)
+    else:
+        del0 = np.sum(del0)
 
     for i in range(maxiter):
 
@@ -68,9 +82,13 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
 
         #Calculate search vector:
         sumr2  = r.T.dot(r)
-        sumdAd = d.T.dot(Ad)
-        sumr2  = MPI_tools.MPI_sum(comm,sumr2)
-        sumdAd = MPI_tools.MPI_sum(comm,sumdAd)
+        sumdAd = d.T.dot(Ad)        
+        if f_found:
+            sumr2  = MPI_tools.MPI_sum(comm,sumr2)
+            sumdAd = MPI_tools.MPI_sum(comm,sumdAd)
+        else:
+            sumr2 = np.sum(sumr2)
+            sumdAd = np.sum(sumdAd)
 
         alpha = sumr2/sumdAd
         
@@ -82,17 +100,28 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = MPI.COMM_WORLD, Ver
             rnew = r - alpha*Ad
 
         sumnewr2 = rnew.T.dot(rnew) 
-        sumnewr2 = MPI_tools.MPI_sum(comm,sumnewr2)
+        if f_found:
+            sumnewr2 = MPI_tools.MPI_sum(comm,sumnewr2)
+        else:
+            sumnewr2 = np.sum(sumnewr2)
 
         beta = sumnewr2/sumr2
 
         d = rnew + beta*d
         r = rnew*1.
 
-        lim = rnew.T.dot(rnew)
-        lim = MPI_tools.MPI_sum(comm,lim)
+        #AXFunc(d,Ad,*args,comm=comm)
 
-        asum = MPI_tools.MPI_sum(comm,xi)
+        lim = rnew.T.dot(rnew)
+        if f_found:
+            lim = MPI_tools.MPI_sum(comm,lim)
+        else:
+            lim = np.sum(lim)
+
+        if f_found:
+            asum = MPI_tools.MPI_sum(comm,xi)
+        else:
+            asum = np.sum(xi)
 
         if (rank == 0) & (Verbose):
             print 'iteration: ', i, 1e-15*del0/lim

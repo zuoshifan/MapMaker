@@ -1,10 +1,21 @@
 import numpy as np
-from mpi4py import MPI
-import MPI_tools
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
 
 
-
-def WhiteCovar(x,bl,bl_long,comm=MPI.COMM_WORLD):
+def WhiteCovar(x,bl,bl_long,comm=None):
+    # Switch on MPI 
+    if f_found:
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+        pass
 
     #BASELINE LENGTH MUST BE EVEN TO SUBTRACT PAIRS
     nbaselines = np.int(len(x)/bl)
@@ -42,12 +53,18 @@ def WhiteCovar(x,bl,bl_long,comm=MPI.COMM_WORLD):
 
     if nans.size > 0:
         notnans   = (np.isnan(C_N) == 0)
-        C_N[nans] = MPI_tools.MPI_sum(comm,C_N[notnans])/MPI_tools.MPI_len(comm,C_N[notnans])
+        if f_found:
+            C_N[nans] = MPI_tools.MPI_sum(comm,C_N[notnans])/MPI_tools.MPI_len(comm,C_N[notnans])
+        else:
+            C_N[nans] = np.mean(C_N[notnans])
 
     zeros = (C_N**2 == 0)
 
     if zeros.size > 0:
         notzeros   = (C_N**2 > 0)
-        C_N[zeros] = MPI_tools.MPI_sum(comm,C_N[notzeros])/MPI_tools.MPI_len(comm,C_N[notzeros])
+        if f_found:
+            C_N[zeros] = MPI_tools.MPI_sum(comm,C_N[notzeros])/MPI_tools.MPI_len(comm,C_N[notzeros])
+        else:
+            C_N[zeros] = np.mean(C_N[notzeros])
 
     return C_N**2

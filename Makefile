@@ -1,9 +1,8 @@
-COMP=#Fortran Compiler command
-INC=-I#/Path/To/Python/Include
+COMP=ifort#Fortran Compiler command
+INC=-I/local/sharper/anaconda/include
 
 all: Binning
 
 Binning:
-
-	f2py -c --f90exec=$(COMP) -m fBinning Tools/fBinning.f90  
+	f2py -c --f90exec=$(COMP) $(LIBS)  -m fBinning Tools/fBinning.f90  
 	mv fBinning.so Tools/fBinning.so

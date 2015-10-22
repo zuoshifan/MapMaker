@@ -1,7 +1,13 @@
 #Holds all the function for solving Ax and b.
 #Standard modules:
 import numpy as np
-from mpi4py import MPI
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
+
 import scipy.fftpack as sfft
 
 #Map-making modules:
@@ -33,13 +39,22 @@ def InvertCirculant(psd,tod):
 
 
 
-def bFunc(m0,tod,pix,model,cn,Maps,bl,comm=None):
+def bFunc(m0,tod,pix,model,null,cn,Maps,bl,comm=None):
     '''
     Return solution for Pt N d. 
     
     '''
-    
+    if comm:
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+        size = 1
+
+
     Nd = InvertCirculant(model,tod)
+
+    print cn.shape
 
     Binning.BinMap(Nd,bl,pix,cn,Maps.m,
                    sw=Maps.sw,
@@ -53,11 +68,19 @@ def bFunc(m0,tod,pix,model,cn,Maps,bl,comm=None):
     return np.reshape(Maps.m[Maps.gd],(Maps.gd.size,1))
 
 
-def AXFunc(m0,PtNPm,tod,pix,model,cn,Maps,bl,comm=None):
+def AXFunc(m0,PtNPm,tod,pix,model,null,cn,Maps,bl,comm=None):
     '''
     Return solution for Pt N P m
     '''
     
+    if comm:
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+        size = 1
+
+
     #Set map to new map iteration:
     Maps.m[Maps.gd] = m0[:,0]
 

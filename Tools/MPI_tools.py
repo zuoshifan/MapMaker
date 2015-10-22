@@ -1,5 +1,11 @@
 import numpy as np
-from mpi4py import MPI
+try:
+    from mpi4py import MPI
+    f_found=True
+    from ..Tools import MPI_tools
+except ImportError:
+    f_found=False
+
 from matplotlib import pyplot
 import math
 
@@ -11,6 +17,7 @@ def MPI_sum(comm,x):
 
     size = comm.Get_size()
     rank = comm.Get_rank()
+
 
     if not isinstance(x,(int,float)):
         try:
