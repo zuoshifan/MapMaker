@@ -12,6 +12,7 @@ An initial guess for x.
 '''
 
 import numpy as np
+from matplotlib import pyplot
 
 try:
     from mpi4py import MPI
@@ -61,13 +62,11 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
     Ad = np.zeros((dsize,1)) #Define for use in the CGM loop
     AXFunc(x0,Ax,*args,comm=comm)
 
-
     #MAKE COLUMN VECTORS:
-
     xi = np.reshape(x0,(xsize,1))
     r  = np.reshape(b - Ax,(dsize,1))
     d  = np.reshape(b - Ax,(dsize,1))
-
+ 
     #Initial Threshold:
     del0 = r.T.dot(r)
     if f_found:
@@ -75,6 +74,8 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
     else:
         del0 = np.sum(del0)
 
+
+    lastLim = 1e32 #Initial value
     for i in range(maxiter):
 
         #Generate a new conjugate search vector Ad using d:
@@ -93,6 +94,12 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
         alpha = sumr2/sumdAd
         
         xi = xi + alpha*d
+
+        ##test = np.squeeze(xi) - args[-1]
+        #print np.mean(np.sqrt(args[3]))*3.
+        #pyplot.hist(test,bins=40)
+        #pyplot.show()
+
         if np.mod(i+1,200) == 0:
             AXFunc(xi,Ad,*args,comm=comm)
             rnew = np.reshape(b - Ad,(dsize,1))
@@ -124,12 +131,20 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
             asum = np.sum(xi)
 
         if (rank == 0) & (Verbose):
-            print 'iteration: ', i, 1e-15*del0/lim
+            print 'iteration: ', i, 1e-11*del0/lim
 
-        if  lim < 1e-15*del0:
+
+        if lim < lastLim:
+            xbest = np.copy(xi)
+            lastLim = lim
+
+        if  lim < 1e-11*del0:
             if rank == 0:
                 print 'Limit reached'
 
             break
 
-    return np.squeeze(xi)
+
+
+
+    return np.squeeze(xbest)

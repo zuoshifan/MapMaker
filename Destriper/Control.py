@@ -32,7 +32,7 @@ def InitGuess(tod,baselength):
     '''
     bl = int(baselength)
 
-    n  = tod.size/bl #Number of baselines
+    n  = int(np.ceil(tod.size/float(bl))) #Number of baselines
     a0 = np.zeros(n)
     
     for i in range(n): #Loop through median values of tod and estimate initial baseline values
@@ -40,7 +40,7 @@ def InitGuess(tod,baselength):
 
     return a0
 
-def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,Medians=False,mask=None,cn=None,BinOnly=False,ReturnOffsets=False):
+def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,Medians=False,mask=None,cn=None,BinOnly=False,ReturnOffsets=False,poorMask=None):
     '''
     Return Destriped maps for a given set of TOD.
 
@@ -79,38 +79,70 @@ def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,M
             tod -= np.median(tod)
 
     #Define inital guess:
-    a0 = InitGuess(tod,bl)
+    #a0 = np.zeros(tod.size//bl)#InitGuess(tod,bl)
     
+
     #Estimate white-noise level of the data:
     if isinstance(cn,type(None)):
         cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
-        cn = np.repeat(cn,bl)
+        cn = np.concatenate( (np.repeat(cn,bl),np.ones(tod.size-bl*cn.size)*cn[-1]) )
         
     if not isinstance(mask,type(None)):
         cn[(mask == False)] = 1e24
 
+
+    #Want to calculate an estimate of ratio of 1/f noise to white noise
+
+    nBaselines     = int(np.ceil(tod.size / float(bl)))
+    nLongBaselines = int(np.ceil(tod.size / float(bl_long)))
+    bl2long = bl_long // bl
+    for i in range(nLongBaselines):
+        a0[i*bl2long:(i+1)*bl2long] -= np.median(a0[i*bl2long:(i+1)*bl2long])
+
+    MAD_a0 = np.median(np.abs(a0-np.median(a0))) * 1.4826 # Factor for MAD of normal distribution
+    noiseRatio = 6.#np.max([MAD_a0**2/np.median(cn)/15.,1.])
+
+    print 'NOISE RATIO:', noiseRatio,MAD_a0,np.std(a0),np.median(cn),a0.size
+
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
 
-    #from matplotlib import pyplot
-        #tod[(mask == True)] = 0.
-    #pyplot.plot(tod,',')        
-    #pyplot.plot(mask,'-r')
-    #pyplot.show()
+    #Make an array of prior 'long' baselines from medians
+    b = np.zeros(a0.size) #Variations around zero
+    for i in range(nLongBaselines):
+        if i == nLongBaselines-1:
+            hi = b.size 
+        else:
+            hi = (i+1) * bl2long
+
+        b[i*bl2long:hi] = np.median(tod[i*bl_long:(i+1)*bl_long])
+   #     tod[i*bl_long:(i+1)*bl_long] -= np.median(tod[i*bl_long:(i+1)*bl_long])
+
+    a0 = np.copy(b)
 
     if not Medians:
         #Return the Destriper derived values for baselines:
-        a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps),comm=comm,Verbose=Verbose,maxiter=maxiter)
+        a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps,b,noiseRatio,poorMask),comm=comm,Verbose=Verbose,maxiter=maxiter)
 
     if not BinOnly:
         
-        for i in range(len(a0)):
-            tod[i*bl:(i+1)*bl] -= a0[i]
+        if isinstance(poorMask, type(None)):
+            for i in range(len(a0)):
+                if i < a0.size-1:
+                    hi = (i+1)*bl
+                else:
+                    hi = tod.size
+                tod[i*bl:hi] -= a0[i]
+        else:
+            a0 = (np.repeat(a0,bl))[:tod.size]#np.concatenate( (np.repeat(a0,bl),np.ones(tod.size-bl*a0.size)*a0[-1]) )
+            from scipy.interpolate import interp1d
+            aind = np.arange(a0.size)
+            aterp = interp1d(aind[poorMask],a0[poorMask],kind='nearest',bounds_error=False)
+            a0 = aterp(aind)
+            tod -= a0
 
-            
-    #if not isinstance(mask,type(None)):
 
-    
+                
     Binning.BinMap(tod,bl,pix,cn,Maps.m,
                    sw=Maps.sw,
                    hw=Maps.hw,

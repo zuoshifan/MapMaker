@@ -7,7 +7,7 @@ SUBROUTINE sort(a,n)
 
   DO j = SIZE(a)-1, 1, -1
     swapped = .FALSE.
-    DO i = 1, j
+    DO i = 1, jx1
       IF (a(i) > a(i+1)) THEN
         temp = a(i)
         a(i) = a(i+1)
@@ -54,6 +54,86 @@ subroutine bin_to_baselines(m,pix,bl,cn,nsamp,pixels,nb,x)
 
 end subroutine bin_to_baselines
 
+subroutine bin_to_baselines_pmask(m,pix,bl,pmask,cn,nsamp,pixels,nb,x)
+  implicit none
+
+  integer nsamp,pixels,nb,bl
+!f2py intent(in) nsamp, pixels, nb, bl
+  real*8 m(pixels),cn(nsamp)
+  integer pmask(nsamp)
+!f2py intent(in) m,cn,pmask
+  integer pix(nsamp)
+!f2py intent(in) pix
+  real*8 x(nb)
+!f2py intent(out) x
+
+
+  integer i,xi,ip
+  
+  do i=1,nsamp
+     xi = (i-1)/bl + 1
+     ip = pix(i) + 1
+
+     if (cn(i) < 1e20) then 
+        if (pmask(i) .eq. 1) then
+           x(xi) = x(xi) + m(ip)/cn(i)
+        endif
+     endif
+
+  enddo
+
+end subroutine bin_to_baselines_pmask
+
+subroutine bin_ft(vals,cn,bl,nb,nsamp,x)
+  implicit none
+
+  integer nb,nsamp,bl
+!f2py intent(in) nb,nsamp,bl
+  real*8 vals(nsamp),cn(nsamp)
+!f2py intent(in) vals,cn
+  real*8 x(nb)
+!f2py intent(out) x
+  
+  integer i,xi
+
+  do i=1,nsamp
+     xi = (i-1)/bl + 1
+
+     if (cn(i) < 1e20) then 
+        x(xi) = x(xi) + vals(i)/cn(i)
+     endif
+
+  enddo
+
+end subroutine bin_ft
+
+subroutine bin_ft_pmask(vals,cn,bl,nb,pmask,nsamp,x)
+  implicit none
+
+  integer nb,nsamp,bl
+!f2py intent(in) nb,nsamp,bl
+  real*8 vals(nsamp),cn(nsamp)
+  integer pmask(nsamp)
+!f2py intent(in) vals,cn,pmask
+  real*8 x(nb)
+!f2py intent(out) x
+  
+  integer i,xi
+
+  do i=1,nsamp
+     xi = (i-1)/bl + 1
+
+     if (cn(i) < 1e20) then 
+        if (pmask(i) .eq. 1) then 
+           x(xi) = x(xi) + vals(i)/cn(i)
+        endif
+     endif
+
+  enddo
+
+end subroutine bin_ft_pmask
+
+
 subroutine bin_ft_ext(a,cn,bl,nb,nsamp,x)
   implicit none
 
@@ -76,6 +156,39 @@ subroutine bin_ft_ext(a,cn,bl,nb,nsamp,x)
   enddo
 
 end subroutine bin_ft_ext
+
+subroutine bin_ft_ext_pmask(a,cn,bl,pmask,nb,nsamp,x)
+  implicit none
+
+  integer nb,nsamp,bl
+!f2py intent(in) nb,nsamp,bl
+  real*8 a(nb),cn(nsamp)
+  integer pmask(nsamp)
+!f2py intent(in) a,cn,pmask
+  real*8 x(nb)
+!f2py intent(out) x
+  
+  integer i,xi
+  real*8 atemp
+
+  print *, 'HELLO'
+
+  atemp = 0.
+  do i=1,nsamp
+
+     if (cn(i) < 1e20) then 
+
+        if (pmask(i) .eq. 1) then 
+           xi = ((i-1)/bl) +1 
+           atemp = a( xi )
+           x(xi) = x(xi) + atemp/cn(i)
+        endif
+     endif
+
+  enddo
+
+end subroutine bin_ft_ext_pmask
+
 
 ! MAP BINNING ROUTINES:
 
@@ -156,6 +269,50 @@ subroutine bin_pix_hits(x,pix,cn,sw,hw,hits,nsamp,pixels)
 
 end subroutine bin_pix_hits
 
+subroutine bin_pix_hits_pmask(x,pix,cn,sw,hw,hits,pmask,nsamp,pixels)
+  !x     = input TOD (input)
+  !pix   = array of pixel numbers (input)
+  !cn    = array of weights for each TOD value (input)
+  !bl    = baseline length (input)
+
+  !sw   = signal*weights map (in/output)
+  !hw   = weights map (in/output)
+  !hits = hits map (output) 
+
+  implicit none
+
+  integer nsamp
+  integer pixels
+!f2py intent(in) nsamp, pixels
+
+  real*8 cn(nsamp)
+  real*8 x(nsamp)
+  integer pix(nsamp)
+  integer pmask(nsamp)
+!f2py  intent(in)  cn, x ,pix,pmask
+
+  real*8 sw(pixels)
+  real*8 hw(pixels)
+  real*8 hits(pixels)
+!f2py intent(in,out) sw,hw,hits
+
+
+  integer i
+ 
+  do i=1, nsamp
+     if (cn(i) < 1e20) then 
+        if (pmask(i) .eq. 1) then
+           sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
+           hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
+           hits(pix(i)+1) = hits(pix(i)+1) + 1
+        endif
+     endif
+
+  end do
+
+end subroutine bin_pix_hits_pmask
+
+
 subroutine median(a,med,nsamp)
   !USE m_mrgrnk
   implicit none
@@ -228,6 +385,57 @@ subroutine bin_pix_hits_median(x,pix,cn,sw,hw,hits,nsamp,pixels)
 end subroutine bin_pix_hits_median
 
 
+subroutine bin_pix_ext_pmask(x,pix,cn,sw,hw,pmask,bl,nsamp,pixels,nb)
+  !x     = input TOD (input)
+  !pix   = array of pixel numbers (input)
+  !cn    = array of weights for each TOD value (input)
+  !bl    = baseline length (input)
+
+  !sw   = signal*weights map (in/output)
+  !hw   = weights map (in/output)
+
+  implicit none
+
+  integer nsamp
+  integer pixels
+  integer nb
+  integer bl
+!f2py intent(in) nsamp, pixels,bl,nb
+
+  real*8 cn(nsamp)
+  real*8 x(nb)
+  integer pix(nsamp)
+  integer pmask(nsamp)
+!f2py  intent(in)  cn, x ,pix,pmask
+
+  real*8 sw(pixels)
+  real*8 hw(pixels)
+!f2py intent(in,out) sw,hw
+
+  integer i,xi
+  real*8 xtemp
+ 
+
+  !print *, 'Hello'
+  print *,'HELLO'
+
+  xtemp = 0.
+  do i=1, nsamp
+     if (cn(i) < 1e20) then 
+
+        if (pmask(i) .eq. 1) then 
+           xi = ((i-1)/bl) + 1 
+           xtemp = x( xi )
+           sw(pix(i)+1)   = sw(pix(i)+1)   + xtemp/cn( i )
+           hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+        endif
+
+     endif
+  end do
+
+end subroutine bin_pix_ext_pmask
+
+
 subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   !x     = input TOD (input)
   !pix   = array of pixel numbers (input)
@@ -264,6 +472,9 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   end do
 
 end subroutine bin_pix_ext
+
+
+
 
 subroutine bin_pix_with_ext(x,a,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   !x     = input TOD (input)
