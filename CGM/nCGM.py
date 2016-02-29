@@ -66,7 +66,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
     xi = np.reshape(x0,(xsize,1))
     r  = np.reshape(b - Ax,(dsize,1))
     d  = np.reshape(b - Ax,(dsize,1))
- 
+
     #Initial Threshold:
     del0 = r.T.dot(r)
     if f_found:
@@ -80,6 +80,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
 
         #Generate a new conjugate search vector Ad using d:
         AXFunc(d,Ad,*args,comm=comm)
+
 
         #Calculate search vector:
         sumr2  = r.T.dot(r)
@@ -143,6 +144,7 @@ def CGM(x0, bFunc, AXFunc, args=(None,), maxiter=200, comm = None, Verbose=False
                 print 'Limit reached'
 
             break
+        comm.barrier()
 
 
 

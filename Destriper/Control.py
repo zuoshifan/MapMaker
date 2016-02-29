@@ -85,10 +85,11 @@ def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,M
     #Estimate white-noise level of the data:
     if isinstance(cn,type(None)):
         cn = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
+        print 'Created estimated CN'
         cn = np.concatenate( (np.repeat(cn,bl),np.ones(tod.size-bl*cn.size)*cn[-1]) )
-        
-    if not isinstance(mask,type(None)):
-        cn[(mask == False)] = 1e24
+
+    #if not isinstance(mask,type(None)):
+    #    cn[(mask == False)] = 1e24
 
 
     #Want to calculate an estimate of ratio of 1/f noise to white noise
@@ -99,10 +100,13 @@ def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,M
     for i in range(nLongBaselines):
         a0[i*bl2long:(i+1)*bl2long] -= np.median(a0[i*bl2long:(i+1)*bl2long])
 
+
     MAD_a0 = np.median(np.abs(a0-np.median(a0))) * 1.4826 # Factor for MAD of normal distribution
     noiseRatio = 6.#np.max([MAD_a0**2/np.median(cn)/15.,1.])
 
-    print 'NOISE RATIO:', noiseRatio,MAD_a0,np.std(a0),np.median(cn),a0.size
+    if rank == 0:
+        print 'Subtracted medians'
+        print 'NOISE RATIO:', rank, noiseRatio,MAD_a0,np.std(a0),np.median(cn),a0.size
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)
@@ -120,26 +124,27 @@ def Destriper(tod,bl,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=300,M
 
     a0 = np.copy(b)
 
-    if not Medians:
-        #Return the Destriper derived values for baselines:
-        a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps,b,noiseRatio,poorMask),comm=comm,Verbose=Verbose,maxiter=maxiter)
 
     if not BinOnly:
+
+        if not Medians:
+        #Return the Destriper derived values for baselines:
+            a0[:] = CGM(a0,bFunc,AXFunc,args=(tod,bl,pix,cn,Maps,b,noiseRatio,poorMask),comm=comm,Verbose=Verbose,maxiter=maxiter)
         
-        if isinstance(poorMask, type(None)):
-            for i in range(len(a0)):
-                if i < a0.size-1:
-                    hi = (i+1)*bl
-                else:
-                    hi = tod.size
-                tod[i*bl:hi] -= a0[i]
-        else:
-            a0 = (np.repeat(a0,bl))[:tod.size]#np.concatenate( (np.repeat(a0,bl),np.ones(tod.size-bl*a0.size)*a0[-1]) )
-            from scipy.interpolate import interp1d
-            aind = np.arange(a0.size)
-            aterp = interp1d(aind[poorMask],a0[poorMask],kind='nearest',bounds_error=False)
-            a0 = aterp(aind)
-            tod -= a0
+            if isinstance(poorMask, type(None)):
+                for i in range(len(a0)):
+                    if i < a0.size-1:
+                        hi = (i+1)*bl
+                    else:
+                        hi = tod.size
+                    tod[i*bl:hi] -= a0[i]
+            else:
+                a0 = (np.repeat(a0,bl))[:tod.size]#np.concatenate( (np.repeat(a0,bl),np.ones(tod.size-bl*a0.size)*a0[-1]) )
+                from scipy.interpolate import interp1d
+                aind = np.arange(a0.size)
+                aterp = interp1d(aind[poorMask],a0[poorMask],kind='nearest',bounds_error=False)
+                a0 = aterp(aind)
+                tod -= a0
 
 
                 

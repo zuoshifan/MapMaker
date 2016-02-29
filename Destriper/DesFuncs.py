@@ -100,7 +100,7 @@ def AXFunc(a,FtZFa,tod,bl,pix,cn,Maps,b,noiseRatio,poorMask,comm=None):
     FtZFa[:,0]  = Ft_ext(a[:,0],bl,cn,poorMask=poorMask) 
     FtZFa[:,0] -= FtP(Maps.m,pix,bl,cn,Maps.hits,a.size,poorMask=poorMask)
 
-    
+
     
     #Now subtract the prior information (this is a gaussian prior)
     FtZFa[:,0] += Ft_ext(a[:,0],bl,cn*noiseRatio**2,poorMask=poorMask)#a[:,0]/(cn[::bl]*noiseRatio**2) * float(bl)

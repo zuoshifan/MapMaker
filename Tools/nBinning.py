@@ -51,11 +51,13 @@ def BinMap(x,bl,p,cn,m,sw=[None],hw=[None],hits=[None],swroot=None,hwroot=None,h
 
 
     if f_found:
-        comm.Reduce(sw  ,swroot  ,op=MPI.SUM,root=0)
-        comm.Reduce(hw  ,hwroot  ,op=MPI.SUM,root=0)
+        sw = sw.astype('f')
+        hw = hw.astype('f')
+        comm.Reduce([sw, MPI.FLOAT]  ,[swroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
+        comm.Reduce([hw, MPI.FLOAT]  ,[hwroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
 
         if hits[0] != None:
-            comm.Reduce(hits,hitmap ,op=MPI.SUM,root=0)        
+            comm.Reduce([hits, MPI.FLOAT],[hitmap, MPI.FLOAT] ,op=MPI.SUM,root=0)        
     else:
         swroot = sw*1.
         hwroot = hw*1.
@@ -66,7 +68,6 @@ def BinMap(x,bl,p,cn,m,sw=[None],hw=[None],hits=[None],swroot=None,hwroot=None,h
     if rank==0:
         meh = (hwroot > 0) & (np.isnan(hwroot) == 0) & (np.isinf(hwroot) == 0)
         m[meh] = swroot[meh]/hwroot[meh]
-                
 
     # Then broadcast it back out to all nodes
     if f_found:
@@ -149,32 +150,41 @@ def BinMap_ext(a,bl,p,cn,m,sw=[None],hw=[None],swroot=None,hwroot=None,comm=None
 
     #LOOP THROUGH EACH MAP PIXEL TO PRODUCE MAP (AND WEIGHT MAP)
     if isinstance(poorMask, type(None)):
-        sw[:],hw[:] = fBinning.bin_pix_ext(a.astype('d'),p.astype('i'),cn.astype('d'),sw.astype('d'),hw.astype('d'),int(bl))
+        sw[:],hw[:] = fBinning.bin_pix_ext(a.astype('f'),p.astype('i'),cn.astype('f'),sw.astype('f'),hw.astype('f'),int(bl))
     else:
         print a.size,p.size,cn.size,sw.size,hw.size,poorMask.size
-        sw[:],hw[:] = fBinning.bin_pix_ext_pmask(a.astype('d'),p.astype('i'),cn.astype('d'),sw.astype('d'),hw.astype('d'),poorMask.astype('i'),int(bl))
+        sw[:],hw[:] = fBinning.bin_pix_ext_pmask(a.astype('f'),p.astype('i'),cn.astype('f'),sw.astype('f'),hw.astype('f'),poorMask.astype('i'),int(bl))
 
     
     #Sum up on root node:
     if f_found:
-        comm.Reduce(sw  ,swroot  ,op=MPI.SUM,root=0)
-        comm.Reduce(hw  ,hwroot  ,op=MPI.SUM,root=0)
+        sw = sw.astype('f')
+        hw = hw.astype('f')
+        #print 'before',type(sw[0]),type(swroot[0])#np.sum(sw),np.sum(hw),np.sum(swroot),np.sum(hwroot)
+        comm.Reduce([sw, MPI.FLOAT]  ,[swroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
+        comm.Reduce([hw, MPI.FLOAT]  ,[hwroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
+        if comm.rank == 0:
+            print np.sum(sw), np.sum(hw), np.sum(swroot), np.sum(hwroot)
+        #print 'after',type(sw[0]),type(swroot[0])#np.sum(sw),np.sum(hw),np.sum(swroot),np.sum(hwroot)
 
         if hits[0] != None:
-            comm.Reduce(hits,hitmap ,op=MPI.SUM,root=0)        
+            comm.Reduce([hits, MPI.FLOAT],[hitmap, MPI.FLOAT] ,op=MPI.SUM,root=0)        
     else:
         swroot = sw*1.
         hwroot = hw*1.
         if hits[0] != None:
             hitmap = hits*1.
 
+
+
+
     if rank==0:
         meh = (hwroot > 0) & (np.isnan(hwroot) == 0) & (np.isinf(hwroot) == 0)
         m[meh] = swroot[meh]/hwroot[meh]
-                
+
     # Then broadcast it back out to all nodes
     if f_found:
-        m[:] = comm.bcast(m,root=0)
+        comm.Bcast([m, MPI.FLOAT],root=0)
         if hits[0] != None:
             hits[:] = comm.bcast(hitmap,root=0)
 
@@ -210,11 +220,11 @@ def BinMap_with_ext(tod,a,bl,p,cn,m,sw=[None],hw=[None],swroot=None,hwroot=None,
     #Sum up on root node:
     #Sum up on root node:
     if f_found:
-        comm.Reduce(sw  ,swroot  ,op=MPI.SUM,root=0)
-        comm.Reduce(hw  ,hwroot  ,op=MPI.SUM,root=0)
+        comm.Reduce([sw, MPI.FLOAT]  ,[swroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
+        comm.Reduce([hw, MPI.FLOAT]  ,[hwroot, MPI.FLOAT]  ,op=MPI.SUM,root=0)
 
         if hits[0] != None:
-            comm.Reduce(hits,hitmap ,op=MPI.SUM,root=0)        
+            comm.Reduce([hits, MPI.FLOAT],[hitmap, MPI.FLOAT] ,op=MPI.SUM,root=0)        
     else:
         swroot[:] = sw[:]
         hwroot[:] = hw[:]

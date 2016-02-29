@@ -75,7 +75,7 @@ subroutine bin_to_baselines_pmask(m,pix,bl,pmask,cn,nsamp,pixels,nb,x)
      ip = pix(i) + 1
 
      if (cn(i) < 1e20) then 
-        if (pmask(i) .eq. 1) then
+        if ((pmask(i) .eq. 1) .and. (ip > 0 .and. ip < pixels) ) then
            x(xi) = x(xi) + m(ip)/cn(i)
         endif
      endif
@@ -217,13 +217,18 @@ subroutine bin_pix(x,pix,cn,sw,hw,nsamp,pixels)
 !f2py intent(in,out) sw,hw
 
 
-  integer i
+  integer i, ip
  
   do i=1, nsamp
 
+     ip = pix(i) + 1
+
+
      if (cn(i) < 1e20) then 
-        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn( i )
-        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+        if (ip > 0 .and. ip < pixels)  then
+           sw(ip)   = sw(ip)   + x(i)/cn( i )
+           hw(ip)   = hw(ip)   + 1.0 /cn( i )
+        endif
      endif
   end do
 
@@ -256,13 +261,17 @@ subroutine bin_pix_hits(x,pix,cn,sw,hw,hits,nsamp,pixels)
 !f2py intent(in,out) sw,hw,hits
 
 
-  integer i
+  integer i,ip
  
   do i=1, nsamp
+     ip = pix(i) + 1
+
      if (cn(i) < 1e20) then 
-        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
-        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
-        hits(pix(i)+1) = hits(pix(i)+1) + 1
+        if (ip > 0 .and. ip < pixels)  then
+           sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
+           hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
+           hits(pix(i)+1) = hits(pix(i)+1) + 1
+        endif
      endif
 
   end do
@@ -297,14 +306,17 @@ subroutine bin_pix_hits_pmask(x,pix,cn,sw,hw,hits,pmask,nsamp,pixels)
 !f2py intent(in,out) sw,hw,hits
 
 
-  integer i
+  integer i,ip
  
   do i=1, nsamp
+
+     ip = pix(i) + 1
+
      if (cn(i) < 1e20) then 
-        if (pmask(i) .eq. 1) then
-           sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
-           hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
-           hits(pix(i)+1) = hits(pix(i)+1) + 1
+        if ((pmask(i) .eq. 1) .and. (ip > 0 .and. ip < pixels)) then
+           sw(ip)   = sw(ip)   + x(i)/cn(i)
+           hw(ip)   = hw(ip)   + 1.0 /cn(i)
+           hits(ip) = hits(ip) + 1
         endif
      endif
 
@@ -371,13 +383,14 @@ subroutine bin_pix_hits_median(x,pix,cn,sw,hw,hits,nsamp,pixels)
 !f2py intent(in,out) sw,hw,hits
 
 
-  integer i
+  integer i,ip
  
   do i=1, nsamp
-     if (cn(i) < 1e20) then 
-        sw(pix(i)+1)   = sw(pix(i)+1)   + x(i)/cn(i)
-        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn(i)
-        hits(pix(i)+1) = hits(pix(i)+1) + 1
+     ip = pix(i)+1
+     if ((cn(i) < 1e20) .and. (ip > 0 .and. ip < pixels)) then 
+        sw(ip)   = sw(ip)   + x(i)/cn(i)
+        hw(ip)   = hw(ip)   + 1.0 /cn(i)
+        hits(ip) = hits(ip) + 1
      endif
 
   end do
@@ -412,7 +425,7 @@ subroutine bin_pix_ext_pmask(x,pix,cn,sw,hw,pmask,bl,nsamp,pixels,nb)
   real*8 hw(pixels)
 !f2py intent(in,out) sw,hw
 
-  integer i,xi
+  integer i,xi,ip
   real*8 xtemp
  
 
@@ -421,13 +434,16 @@ subroutine bin_pix_ext_pmask(x,pix,cn,sw,hw,pmask,bl,nsamp,pixels,nb)
 
   xtemp = 0.
   do i=1, nsamp
+
+     ip = pix(i)+1
+
      if (cn(i) < 1e20) then 
 
-        if (pmask(i) .eq. 1) then 
+        if ((pmask(i) .eq. 1)  .and. (ip > 0 .and. ip < pixels)) then 
            xi = ((i-1)/bl) + 1 
            xtemp = x( xi )
-           sw(pix(i)+1)   = sw(pix(i)+1)   + xtemp/cn( i )
-           hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+           sw(ip)   = sw(ip)   + xtemp/cn( i )
+           hw(ip)   = hw(ip)   + 1.0 /cn( i )
         endif
 
      endif
@@ -462,12 +478,15 @@ subroutine bin_pix_ext(x,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   real*8 hw(pixels)
 !f2py intent(in,out) sw,hw
 
-  integer i
+  integer i,ip
  
   do i=1, nsamp
-     if (cn(i) < 1e20) then 
-        sw(pix(i)+1)   = sw(pix(i)+1)   + x( ((i-1)/bl) +1 )/cn( i )
-        hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( i )
+
+     ip = pix(i)+1
+
+     if ((cn(i) < 1e20) .and. (ip > 0 .and. ip < pixels)) then 
+        sw(ip)   = sw(ip)   + x( ((i-1)/bl) +1 )/cn( i )
+        hw(ip)   = hw(ip)   + 1.0 /cn( i )
      endif
   end do
 
@@ -504,11 +523,15 @@ subroutine bin_pix_with_ext(x,a,pix,cn,sw,hw,bl,nsamp,pixels,nb)
   real*8 hw(pixels)
 !f2py intent(in,out) sw,hw
 
-  integer i
+  integer i,ip
  
   do i=1, nsamp
-     sw(pix(i)+1)   = sw(pix(i)+1)   + (x(i) - a( ((i-1)/bl) +1 ))/cn( ((i-1)/bl) +1 )
-     hw(pix(i)+1)   = hw(pix(i)+1)   + 1.0 /cn( ((i-1)/bl) +1 )
+
+     ip = pix(i)+1
+     if (ip > 0 .and. ip < pixels) then
+        sw(ip)   = sw(ip)   + (x(i) - a( ((i-1)/bl) +1 ))/cn( ((i-1)/bl) +1 )
+        hw(ip)   = hw(ip)   + 1.0 /cn( ((i-1)/bl) +1 )
+     endif
   end do
 
 end subroutine bin_pix_with_ext

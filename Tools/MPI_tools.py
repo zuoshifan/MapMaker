@@ -1,10 +1,11 @@
 import numpy as np
-try:
-    from mpi4py import MPI
-    f_found=True
-    from ..Tools import MPI_tools
-except ImportError:
-    f_found=False
+#try:
+#    from mpi4py import MPI
+#    f_found=True
+#    from ..Tools import MPI_tools
+#except ImportError:
+#    f_found=False
+from mpi4py import MPI
 
 from matplotlib import pyplot
 import math
@@ -18,25 +19,19 @@ def MPI_sum(comm,x):
     size = comm.Get_size()
     rank = comm.Get_rank()
 
+    x2 = np.array([np.sum(x)], dtype=np.result_type(x))
 
-    if not isinstance(x,(int,float)):
-        try:
-            xsum = math.fsum(x)
-        except TypeError:
-            xsum = math.fsum(x.tolist())
+    if np.result_type(x2) == float:
+        MPIType = MPI.FLOAT
     else:
-        xsum = x
+        MPIType = MPI.INT
 
-    vals = comm.gather(xsum,root=0)
 
-    if rank==0:
-        s = math.fsum(vals)
-    else:
-        s = None
-            
-    s = comm.bcast(s,root=0)
+    s = np.zeros(x2.size, dtype=np.result_type(x))
 
-    return s
+    comm.Allreduce( [x2, MPIType], [s, MPIType], op=MPI.SUM)
+
+    return np.sum(s)
 
 def MPI_concat(comm,x):
     # Concatenate values from all nodes and broadcast back the result
