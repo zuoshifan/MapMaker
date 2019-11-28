@@ -5,7 +5,7 @@ import healpy as hp
 from matplotlib import pyplot
 
 #Now import the Destriper:
-from MapMaker.Destriper import Control 
+from MapMaker.Destriper import Control
 
 #Open the test data:
 hdu = pyfits.open('TestData.fits')
