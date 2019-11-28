@@ -37,7 +37,8 @@ def EstimateModel(resid):
     '''
 
     #FFT's are faster if length of array is a power of 2
-    bit2 = 2**np.ceil(np.log10(resid.size)/np.log10(2))
+    # bit2 = 2**np.ceil(np.log10(resid.size)/np.log10(2))
+    bit2 = 2**np.int(np.ceil(np.log10(resid.size)/np.log10(2)))
 
     #FFT the residual noise vector:
     fa = sfft.fft(resid,n=bit2)
@@ -114,7 +115,8 @@ def MLMapper(tod,pix,npix,comm=None,bl_long=None,Verbose=False,maxiter=3,cn=None
     #cn   = WhiteCovar.WhiteCovar(tod,bl,bl_long,comm=comm)
     if isinstance(cn,type(None)):
         cn = WhiteCovar.WhiteCovar(tod,bl_long,bl_long,comm=comm)
-        cn = np.repeat(cn,bl_long)
+        # cn = np.repeat(cn,bl_long)
+        cn = np.repeat(cn,bl_long+1)[:len(tod)]
 
     #Generate Maps:
     Maps = MapsClass(npix,rank=rank) #If rank == 0, generate root maps (swroot, hwroot)

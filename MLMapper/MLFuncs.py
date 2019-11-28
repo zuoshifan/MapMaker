@@ -29,7 +29,8 @@ def InvertCirculant(psd,tod):
     '''
     
     #Zero pad fft's to speed them up a bobbin:
-    bit2 = 2**np.ceil(np.log10(tod.size)/np.log10(2))
+    # bit2 = 2**np.ceil(np.log10(tod.size)/np.log10(2))
+    bit2 = 2**np.int(np.ceil(np.log10(tod.size)/np.log10(2)))
     ftod  = sfft.fft(tod.astype(np.float64),n=bit2)/psd
     
     #Divide each fft(d) by fft(N), inverse transform and shift vector by -1 (for reasons unknown)
